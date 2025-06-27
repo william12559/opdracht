@@ -86,6 +86,7 @@
           <th>Temp</th>
           <th>Vochtigheid</th>
           <th>Luchtdruk</th>
+          <th>UV</th>
           <th colspan="2">Weer</th>
           <th colspan="2">Wind</th>
         </tr>
@@ -99,6 +100,7 @@
             <td>${Math.round(element.main.temp - 273.15)}&deg;C</td>
             <td>${element.main.humidity}%</td>
             <td>${element.main.pressure} hPa</td>
+            <td>${element.main.uvi}</td>
             <td>${element.weather[0].description}</td>
             <td><img src="https://openweathermap.org/img/wn/${element.weather[0].icon}@2x.png"/></td>
             <td>${element.wind.speed} km/h</td>
