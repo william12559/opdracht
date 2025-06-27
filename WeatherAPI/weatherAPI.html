@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weer & UV App</title>
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-image: url("weatherFoto.jpg");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+        color: #000;
+        margin: 0;
+        padding: 20px;
+      }
+
+      input,
+      select,
+      button {
+        padding: 8px;
+        margin: 5px;
+      }
+
+      table {
+        margin-top: 20px;
+        border-collapse: collapse;
+        background-color: rgba(255, 255, 255, 0.8);
+      }
+
+      th,
+      td {
+        border: 1px solid #333;
+        padding: 8px;
+      }
+
+      .arrow {
+        width: 50px;
+        height: 50px;
+      }
+
+      #uv-index {
+        font-weight: bold;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.7);
+      }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
+    <script>
+      const API_KEY = "aa973f7113a8c3e4731ef88dc95731d9";
+
+      async function getCoordinatesByCity(city) {
+        const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`;
+        const response = await axios.get(url);
+        if (response.data.length > 0) {
+          return response.data[0];
+        } else {
+          throw new Error("Stad niet gevonden");
+        }
+      }
+
+      async function loadWeather(lat, lon, cityName) {
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+        const uvUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+
+        const [forecastResponse, uvResponse] = await Promise.all([
+          axios.get(forecastUrl),
+          axios.get(uvUrl),
+        ]);
+
+        const forecast = forecastResponse.data;
+        const current = uvResponse.data;
+
+        document.getElementById("output").innerHTML = `
+        <tr>
+          <th colspan="2">Datum & Tijd</th>
+          <th>Temp</th>
+          <th>Vochtigheid</th>
+          <th>Luchtdruk</th>
+          <th colspan="2">Weer</th>
+          <th colspan="2">Wind</th>
+        </tr>
+      `;
+
+        for (let element of forecast.list.slice(0, 10)) {
+          document.getElementById("output").innerHTML += `
+          <tr>
+            <td>${element.dt_txt.slice(0, 10)}</td>
+            <td>${element.dt_txt.slice(11, 16)}</td>
+            <td>${Math.round(element.main.temp - 273.15)}&deg;C</td>
+            <td>${element.main.humidity}%</td>
+            <td>${element.main.pressure} hPa</td>
+            <td>${element.weather[0].description}</td>
+            <td><img src="https://openweathermap.org/img/wn/${
+              element.weather[0].icon
+            }@2x.png"/></td>
+            <td>${element.wind.speed} km/h</td>
+            <td><img class="arrow" style="transform:rotate(${
+              element.wind.deg
+            }deg)" src="weatherAppArrow.png"/></td>
+          </tr>
+        `;
+        }
+
+        const uvIndex = current.uvi || "Niet beschikbaar";
+        document.getElementById(
+          "uv-index"
+        ).innerText = `UV-index in ${cityName}: ${uvIndex}`;
+      }
+
+      async function zoekWeer() {
+        const city = document.getElementById("stad").value;
+        if (!city) return alert("Voer een stad of dorp in.");
+        try {
+          const location = await getCoordinatesByCity(city);
+          await loadWeather(location.lat, location.lon, location.name);
+        } catch (err) {
+          alert("Fout bij ophalen gegevens: " + err.message);
+        }
+      }
+
+      window.onload = () => {
+        // standaard Zwolle
+        getCoordinatesByCity("Zwolle").then((loc) => {
+          loadWeather(loc.lat, loc.lon, "Zwolle");
+        });
+      };
+    </script>
+  </head>
+
+  <body>
+    <h1>🌤️ Weer & UV App</h1>
+
+    <div>
+      <input type="text" id="stad" placeholder="Voer een stad of dorp in..." />
+      <button onclick="zoekWeer()">Zoek</button>
+    </div>
+
+    <div id="uv-index">UV-index in Zwolle: laden...</div>
+
+    <table id="output"></table>
+  </body>
+</html>
