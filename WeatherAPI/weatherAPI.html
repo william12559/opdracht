@@ -56,7 +56,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
   <script>
     const API_KEY = "aa973f7113a8c3e4731ef88dc95731d9";
-
+  const url = ` https://api.openuv.io/api/v1/uv?q=${city}&limit=1`;
+  const headers = {
+    'x-access-token': API_KEY
+  };
     async function getCoordinatesByCity(city) {
       const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`;
       const response = await axios.get(url);
