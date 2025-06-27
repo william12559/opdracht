@@ -72,16 +72,18 @@
 
     async function loadWeather(lat, lon, cityName) {
       const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
-      const uvUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+      const uvUrl = `https://currentuvindex.com/api/v1/uvi?latitude=${lat}&longitude=${lon}`;
 
       const [forecastResponse, uvResponse] = await Promise.all([
         axios.get(forecastUrl),
         axios.get(uvUrl),
       ]);
 
+      console.log(uvResponse);
+
       const forecast = forecastResponse.data;
       const current = uvResponse.data;
-      const uv = current.uvi;
+      const uv = current.now.uvi;
 
       document.getElementById("output").innerHTML = `
         <tr>
@@ -103,7 +105,7 @@
             <td>${Math.round(element.main.temp - 273.15)}&deg;C</td>
             <td>${element.main.humidity}%</td>
             <td>${element.main.pressure} hPa</td>
-            <td>${element.main.uvi}</td>
+            <td>${uv}</td>
             <td>${element.weather[0].description}</td>
             <td><img src="https://openweathermap.org/img/wn/${element.weather[0].icon}@2x.png"/></td>
             <td>${element.wind.speed} km/h</td>
