@@ -1,84 +1,86 @@
 <!DOCTYPE html>
 <html lang="nl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weer & UV App</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weer, UV & Verbrandadvies</title>
 
-    <style>
-      body {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background-image: url("weatherFoto.jpg");
-        background-repeat: no-repeat;
-        background-size: cover;
-        background-attachment: fixed;
-        font-family: Arial, sans-serif;
-        color: #000;
-        margin: 0;
-        padding: 20px;
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-image: url("weatherFoto.jpg");
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-attachment: fixed;
+      font-family: Arial, sans-serif;
+      color: #000;
+      margin: 0;
+      padding: 20px;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+    }
+
+    table {
+      margin-top: 20px;
+      border-collapse: collapse;
+      background-color: rgba(255, 255, 255, 0.85);
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+    }
+
+    .arrow {
+      width: 50px;
+      height: 50px;
+    }
+
+    #uv-index, #advies {
+      font-weight: bold;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: rgba(255,255,255,0.85);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
+  <script>
+    const API_KEY = "aa973f7113a8c3e4731ef88dc95731d9";
+
+    async function getCoordinatesByCity(city) {
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`;
+      const response = await axios.get(url);
+      if (response.data.length > 0) {
+        return response.data[0];
+      } else {
+        throw new Error("Stad niet gevonden");
       }
+    }
 
-      input,
-      select,
-      button {
-        padding: 8px;
-        margin: 5px;
-      }
+    async function loadWeather(lat, lon, cityName) {
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+      const uvUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
 
-      table {
-        margin-top: 20px;
-        border-collapse: collapse;
-        background-color: rgba(255, 255, 255, 0.8);
-      }
+      const [forecastResponse, uvResponse] = await Promise.all([
+        axios.get(forecastUrl),
+        axios.get(uvUrl),
+      ]);
 
-      th,
-      td {
-        border: 1px solid #333;
-        padding: 8px;
-      }
+      const forecast = forecastResponse.data;
+      const current = uvResponse.data;
+      const uv = current.uvi;
 
-      .arrow {
-        width: 50px;
-        height: 50px;
-      }
-
-      #uv-index {
-        font-weight: bold;
-        margin-top: 10px;
-        padding: 10px;
-        background-color: rgba(255, 255, 255, 0.7);
-      }
-    </style>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"></script>
-    <script>
-      const API_KEY = "aa973f7113a8c3e4731ef88dc95731d9";
-
-      async function getCoordinatesByCity(city) {
-        const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`;
-        const response = await axios.get(url);
-        if (response.data.length > 0) {
-          return response.data[0];
-        } else {
-          throw new Error("Stad niet gevonden");
-        }
-      }
-
-      async function loadWeather(lat, lon, cityName) {
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
-        const uvUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
-
-        const [forecastResponse, uvResponse] = await Promise.all([
-          axios.get(forecastUrl),
-          axios.get(uvUrl),
-        ]);
-
-        const forecast = forecastResponse.data;
-        const current = uvResponse.data;
-
-        document.getElementById("output").innerHTML = `
+      document.getElementById("output").innerHTML = `
         <tr>
           <th colspan="2">Datum & Tijd</th>
           <th>Temp</th>
@@ -89,8 +91,8 @@
         </tr>
       `;
 
-        for (let element of forecast.list.slice(0, 10)) {
-          document.getElementById("output").innerHTML += `
+      for (let element of forecast.list.slice(0, 10)) {
+        document.getElementById("output").innerHTML += `
           <tr>
             <td>${element.dt_txt.slice(0, 10)}</td>
             <td>${element.dt_txt.slice(11, 16)}</td>
@@ -98,53 +100,88 @@
             <td>${element.main.humidity}%</td>
             <td>${element.main.pressure} hPa</td>
             <td>${element.weather[0].description}</td>
-            <td><img src="https://openweathermap.org/img/wn/${
-              element.weather[0].icon
-            }@2x.png"/></td>
+            <td><img src="https://openweathermap.org/img/wn/${element.weather[0].icon}@2x.png"/></td>
             <td>${element.wind.speed} km/h</td>
-            <td><img class="arrow" style="transform:rotate(${
-              element.wind.deg
-            }deg)" src="weatherAppArrow.png"/></td>
+            <td><img class="arrow" style="transform:rotate(${element.wind.deg}deg)" src="weatherAppArrow.png"/></td>
           </tr>
         `;
-        }
-
-        const uvIndex = current.uvi || "Niet beschikbaar";
-        document.getElementById(
-          "uv-index"
-        ).innerText = `UV-index in ${cityName}: ${uvIndex}`;
       }
 
-      async function zoekWeer() {
-        const city = document.getElementById("stad").value;
-        if (!city) return alert("Voer een stad of dorp in.");
-        try {
-          const location = await getCoordinatesByCity(city);
-          await loadWeather(location.lat, location.lon, location.name);
-        } catch (err) {
-          alert("Fout bij ophalen gegevens: " + err.message);
-        }
+      const huidtype = document.getElementById("huidtype").value;
+      if (uv !== undefined) {
+        document.getElementById("uv-index").innerText = `UV-index in ${cityName}: ${uv}`;
+        geefVerbrandAdvies(uv, huidtype);
+      } else {
+        document.getElementById("uv-index").innerText = `UV-index in ${cityName}: Niet beschikbaar`;
+        document.getElementById("advies").innerText = `Geen verbrandadvies beschikbaar zonder UV-index.`;
       }
+    }
 
-      window.onload = () => {
-        // standaard Zwolle
-        getCoordinatesByCity("Zwolle").then((loc) => {
-          loadWeather(loc.lat, loc.lon, "Zwolle");
-        });
+    function geefVerbrandAdvies(uv, huidtype) {
+      const types = {
+        "1": 67,
+        "2": 100,
+        "3": 200,
+        "4": 300,
+        "5": 400,
+        "6": 500
       };
-    </script>
-  </head>
 
-  <body>
-    <h1>🌤️ Weer & UV App</h1>
+      const minutes = types[huidtype] / uv;
+      const tijd = Math.round(minutes);
+      let boodschap = "";
 
-    <div>
-      <input type="text" id="stad" placeholder="Voer een stad of dorp in..." />
-      <button onclick="zoekWeer()">Zoek</button>
-    </div>
+      if (tijd < 10) {
+        boodschap = `⚠️ Zeer snel verbranden (${tijd} min)! Bescherm je goed.`;
+      } else if (tijd < 20) {
+        boodschap = `⚠️ Snel verbranden (${tijd} min). Smeer je in met hoge factor.`;
+      } else if (tijd < 35) {
+        boodschap = `☀️ Matig risico (${tijd} min). Smeer je goed in.`;
+      } else {
+        boodschap = `✅ Laag risico (${tijd} min). Toch zonnecrème aangeraden.`;
+      }
 
-    <div id="uv-index">UV-index in Zwolle: laden...</div>
+      document.getElementById("advies").innerText = `Verbrandadvies: ${boodschap}`;
+    }
 
-    <table id="output"></table>
-  </body>
+    async function zoekWeer() {
+      const city = document.getElementById("stad").value;
+      if (!city) return alert("Voer een stad of dorp in.");
+      try {
+        const location = await getCoordinatesByCity(city);
+        await loadWeather(location.lat, location.lon, location.name);
+      } catch (err) {
+        alert("Fout bij ophalen gegevens: " + err.message);
+      }
+    }
+
+    window.onload = () => {
+      getCoordinatesByCity("Zwolle").then((loc) => {
+        loadWeather(loc.lat, loc.lon, "Zwolle");
+      });
+    };
+  </script>
+</head>
+
+<body>
+  <h1>🌤️ Weer, UV & Verbrandadvies</h1>
+
+  <div>
+    <input type="text" id="stad" placeholder="Voer een stad of dorp in..." />
+    <select id="huidtype">
+      <option value="1">Huidtype I - Zeer licht</option>
+      <option value="2">Huidtype II - Licht</option>
+      <option value="3" selected>Huidtype III - Licht getint</option>
+      <option value="4">Huidtype IV - Olijfkleurig</option>
+      <option value="5">Huidtype V - Donker</option>
+      <option value="6">Huidtype VI - Zeer donker</option>
+    </select>
+    <button onclick="zoekWeer()">Zoek</button>
+  </div>
+
+  <div id="uv-index">UV-index in Zwolle: laden...</div>
+  <div id="advies">Verbrandadvies: laden...</div>
+
+  <table id="output"></table>
+</body>
 </html>
